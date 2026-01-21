@@ -7,7 +7,6 @@ import {
   Menu, 
   Settings, 
   ChevronRight,
-  Users,
   // PieChart,
   // History
 } from 'lucide-react';
@@ -42,7 +41,7 @@ export const DashboardLayout = () => {
       >
         <div className="h-16 flex items-center justify-center border-b border-slate-100">
           <div className="flex items-center gap-3 font-bold text-xl tracking-tight text-[#20398B]">
-             <Users className="w-8 h-8 text-[#20398B]" />
+             <img src="/Icon-EVN.webp" alt="Logo" className="w-8 h-auto object-contain" />
              {isSidebarOpen && <span className="animate-fade-in">JOB Tool</span>}
           </div>
         </div>

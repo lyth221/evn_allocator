@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, Mail, ArrowRight, Eye, EyeOff, Users } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 export const Login = () => {
   const [username, setUsername] = useState('admin');
@@ -30,8 +30,10 @@ export const Login = () => {
         <div className="inline-flex justify-center mb-4">
            {/* Logo Image */}
            {/* Logo Image */}
-           <Users 
-             className="h-20 w-auto text-[#20398B] drop-shadow-sm hover:scale-105 transition-transform duration-300"
+           <img 
+             src="/Icon-EVN.webp" 
+             alt="EVN Logo"
+             className="h-24 w-auto object-contain drop-shadow-md hover:scale-105 transition-transform duration-300"
            />
         </div>
         <h1 className="text-3xl font-extrabold text-[#20398B] tracking-tight">

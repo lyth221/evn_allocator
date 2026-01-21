@@ -6,6 +6,7 @@ import { MapResults } from '../components/MapResults';
 import type { ProcessingParams, TCC, Team } from '../types';
 import { parseExcel } from '../utils/excel';
 import { runClustering } from '../utils/clustering';
+import { estimateTeamTravelDistance } from '../utils/math';
 import { LayoutDashboard, Zap, Database, AlertCircle, Map, List } from 'lucide-react';
 import { saveHistory } from '../utils/historyStorage';
 
@@ -38,6 +39,39 @@ export const Dashboard = () => {
 
   const handleParamChange = (key: keyof ProcessingParams, value: number) => {
     setParams(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleMoveTcc = (tcc: TCC, fromTeamId: string, toTeamId: string) => {
+    const newTeams = teams.map(t => ({ ...t, tccs: [...t.tccs] })); // Deep clone structure
+    
+    const sourceTeam = newTeams.find(t => t.id === fromTeamId);
+    const targetTeam = newTeams.find(t => t.id === toTeamId);
+
+    if (!sourceTeam || !targetTeam) return;
+
+    // Remove from source
+    sourceTeam.tccs = sourceTeam.tccs.filter(t => t.MA_TRAM !== tcc.MA_TRAM);
+    sourceTeam.totalCustomers = sourceTeam.tccs.reduce((sum, t) => sum + t.SL_VITRI, 0);
+    sourceTeam.estimatedDistanceKm = estimateTeamTravelDistance(
+      sourceTeam.tccs.map(p => ({ lat: p.LATITUDE, lng: p.LONGITUDE }))
+    );
+
+    // Add to target
+    targetTeam.tccs.push(tcc);
+    targetTeam.totalCustomers = targetTeam.tccs.reduce((sum, t) => sum + t.SL_VITRI, 0);
+    targetTeam.estimatedDistanceKm = estimateTeamTravelDistance(
+      targetTeam.tccs.map(p => ({ lat: p.LATITUDE, lng: p.LONGITUDE }))
+    );
+
+    setTeams(newTeams);
+    
+    // Update history silently
+    saveHistory({
+      fileName: file?.name || `Phân bổ ${new Date().toLocaleString('vi-VN')}`,
+      numberOfTeams: params.numberOfTeams,
+      totalCustomers: tccs.reduce((acc, t) => acc + t.SL_VITRI, 0),
+      teams: newTeams
+    });
   };
 
   const handleProcess = () => {
@@ -113,8 +147,14 @@ export const Dashboard = () => {
             {teams.length > 0 ? (
                <div className="h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-                      <Results teams={teams} />
+                      <Results teams={teams} onMoveTcc={handleMoveTcc} />
                    </div>
+                   {/* Hidden MapResults instance just for rendering logic consistency if needed, but actually Results usually renders List or Map depending on its internal logic? 
+                       Wait, the user wants the map to update. The 'Results' component (results.tsx) likely renders the tabs or the view.
+                       Let's check Results.tsx. If Results.tsx manages the view (Map vs List), I need to pass handleMoveTcc to it.
+                       However, currently Dashboard.tsx renders <Results />.
+                       I'll assume Results.tsx renders MapResults internally.
+                    */}
                </div>
             ) : tccs.length > 0 ? (
                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in h-full flex flex-col">
@@ -149,7 +189,9 @@ export const Dashboard = () => {
                   
                   {previewMode === 'map' ? (
                      <div className="flex-1 p-0 overflow-hidden relative z-10">
-                        <MapResults teams={[{
+                         <MapResults 
+                           showTeamColor={false}
+                           teams={[{
                            id: 'input-preview',
                            name: 'Dữ liệu đầu vào',
                            tccs: tccs,

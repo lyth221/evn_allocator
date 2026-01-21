@@ -1,13 +1,16 @@
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import type { Team } from '../types';
-import { Triangle } from 'lucide-react';
+import type { TCC, Team } from '../types';
+
 import { renderToStaticMarkup } from 'react-dom/server';
+import { ChevronDown, ChevronUp, ArrowRightLeft } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 interface MapResultsProps {
   teams: Team[];
+  showTeamColor?: boolean;
+  onMoveTcc?: (tcc: TCC, fromTeamId: string, toTeamId: string) => void;
 }
 
 const TEAM_COLORS = [
@@ -23,31 +26,50 @@ const TEAM_COLORS = [
   '#f59e0b', // amber-500
 ];
 
-const createCustomIcon = (color: string) => {
+const createCustomIcon = (color: string, showBadge: boolean = true) => {
   const iconHtml = renderToStaticMarkup(
     <div style={{
-      backgroundColor: color,
-      width: '36px',
-      height: '36px',
-      borderRadius: '50%',
+      width: '34px',
+      height: '34px',
+      position: 'relative',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      border: '1.5px solid white',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1)',
-      color: 'white',
-      position: 'relative'
     }}>
-      <Triangle size={16} fill="white" strokeWidth={3} className="mt-[2px]" />
+      <img 
+        src="/tram.svg" 
+        alt="tram" 
+        style={{ 
+          width: '34px', 
+          height: '34px', 
+          objectFit: 'contain',
+          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+        }} 
+      />
+      {showBadge && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '12px',
+          height: '12px',
+          backgroundColor: color,
+          borderRadius: '50%',
+          border: '1.5px solid white',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+          zIndex: 10
+        }} />
+      )}
     </div>
   );
 
   return L.divIcon({
     html: iconHtml,
     className: 'custom-marker',
-    iconSize: [36, 36],
-    iconAnchor: [18, 36],
-    popupAnchor: [0, -36]
+    iconSize: [34, 34],
+    iconAnchor: [17, 34],
+    popupAnchor: [0, -34]
   });
 };
 
@@ -66,12 +88,28 @@ const FitBounds = ({ teams }: { teams: Team[] }) => {
   return null;
 }
 
-export const MapResults: React.FC<MapResultsProps> = ({ teams }) => {
+export const MapResults: React.FC<MapResultsProps> = ({ teams, showTeamColor = true, onMoveTcc }) => {
   // Center default (Vietnam or calc from data)
   const defaultCenter: [number, number] = [10.8231, 106.6297]; // HCM City
+  const [isLegendOpen, setIsLegendOpen] = React.useState(true);
+  const [hiddenTeamIds, setHiddenTeamIds] = React.useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setHiddenTeamIds(new Set());
+  }, [teams]);
+
+  const toggleTeamVisibility = (teamId: string) => {
+    const newHidden = new Set(hiddenTeamIds);
+    if (newHidden.has(teamId)) {
+      newHidden.delete(teamId);
+    } else {
+      newHidden.add(teamId);
+    }
+    setHiddenTeamIds(newHidden);
+  };
 
   return (
-    <div className="h-[600px] w-full rounded-xl overflow-hidden border border-slate-200 shadow-sm relative z-0 bg-slate-100">
+    <div className="h-[80vh] w-full rounded-xl overflow-hidden border border-slate-200 shadow-sm relative z-0 bg-slate-100">
        <MapContainer center={defaultCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -79,8 +117,10 @@ export const MapResults: React.FC<MapResultsProps> = ({ teams }) => {
           />
           <FitBounds teams={teams} />
           {teams.map((team, idx) => {
+             if (hiddenTeamIds.has(team.id)) return null;
+
              const color = TEAM_COLORS[idx % TEAM_COLORS.length];
-             const icon = createCustomIcon(color);
+             const icon = createCustomIcon(color, showTeamColor);
              
              return team.tccs.map(tcc => (
                <Marker 
@@ -99,6 +139,12 @@ export const MapResults: React.FC<MapResultsProps> = ({ teams }) => {
                             <span className="text-slate-500 text-xs">Mã Trạm:</span>
                             <span className="font-mono font-bold text-[#20398B]">{tcc.MA_TRAM}</span>
                          </div>
+                         {tcc.TEN_TRAM && (
+                           <div className="flex items-center justify-between">
+                              <span className="text-slate-500 text-xs">Tên Trạm:</span>
+                              <span className="font-bold text-right ml-2 text-xs truncate max-w-[120px]" title={tcc.TEN_TRAM}>{tcc.TEN_TRAM}</span>
+                           </div>
+                         )}
                          <div className="flex items-center justify-between">
                             <span className="text-slate-500 text-xs">Khách hàng:</span>
                             <span className="font-bold">{tcc.SL_VITRI}</span>
@@ -106,6 +152,35 @@ export const MapResults: React.FC<MapResultsProps> = ({ teams }) => {
                          <div className="pt-2 text-xs text-slate-400 font-mono text-center bg-slate-50 rounded py-1">
                             {tcc.LATITUDE.toFixed(6)}, {tcc.LONGITUDE.toFixed(6)}
                          </div>
+
+                         {onMoveTcc && showTeamColor && (
+                           <div className="mt-3 pt-2 border-t border-slate-100">
+                             <div className="text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+                               <ArrowRightLeft size={10} /> Chuyển phân công
+                             </div>
+                             <div className="grid grid-cols-3 gap-1">
+                                {teams.filter(t => t.id !== team.id).map((targetTeam) => {
+                                  // Re-calculate color for target team based on its original index in the full list
+                                  // We need the index of targetTeam in the original 'teams' array
+                                  const originalIdx = teams.findIndex(t => t.id === targetTeam.id);
+                                  const targetColor = TEAM_COLORS[originalIdx % TEAM_COLORS.length];
+                                  
+                                  return (
+                                    <button
+                                      key={targetTeam.id}
+                                      onClick={() => onMoveTcc(tcc, team.id, targetTeam.id)}
+                                      className="flex items-center justify-center p-1 rounded border hover:shadow-sm transition-all text-[10px] font-semibold text-slate-600 gap-1 bg-white hover:bg-slate-50"
+                                      style={{ borderColor: targetColor }}
+                                      title={`Chuyển sang ${targetTeam.name}`}
+                                    >
+                                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: targetColor }} />
+                                      {targetTeam.name.replace('Nhóm ', '#')}
+                                    </button>
+                                  );
+                                })}
+                             </div>
+                           </div>
+                         )}
                       </div>
                    </div>
                  </Popup>
@@ -113,6 +188,55 @@ export const MapResults: React.FC<MapResultsProps> = ({ teams }) => {
              ));
           })}
        </MapContainer>
+       
+       {showTeamColor && teams.length > 0 && (
+          <div className={`absolute top-2 right-2 z-[1000] bg-white/95 backdrop-blur-md rounded-md shadow-sm border border-slate-200 transition-all duration-300 overflow-hidden flex flex-col ${isLegendOpen ? 'w-40 max-h-[calc(100%-1rem)]' : 'w-auto h-auto'}`}>
+              <button 
+                onClick={() => setIsLegendOpen(!isLegendOpen)}
+                className={`flex items-center justify-between w-full px-2.5 py-1.5 bg-slate-50/80 hover:bg-slate-100 transition-colors border-b ${isLegendOpen ? 'border-slate-100' : 'border-transparent'}`}
+                title={isLegendOpen ? "Thu gọn" : "Mở rộng"}
+              >
+                  <div className="flex items-center gap-1.5">
+                     <span className="font-bold text-slate-700 text-[11px]">Chú thích</span>
+                     {isLegendOpen && <span className="text-[10px] font-normal text-slate-400">{teams.length} đội</span>}
+                  </div>
+                  {isLegendOpen ? <ChevronUp size={12} className="text-slate-400" /> : <ChevronDown size={12} className="text-slate-400" />}
+              </button>
+              
+              {isLegendOpen && (
+                <div className="p-1.5 space-y-0.5 overflow-y-auto custom-scrollbar">
+                    {teams.map((team, idx) => {
+                        const color = TEAM_COLORS[idx % TEAM_COLORS.length];
+                        const isVisible = !hiddenTeamIds.has(team.id);
+                        return (
+                            <div 
+                              key={team.id} 
+                              className="flex items-center justify-between p-1 rounded hover:bg-slate-50 transition-colors cursor-pointer select-none"
+                              onClick={() => toggleTeamVisibility(team.id)}
+                            >
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <input 
+                                      type="checkbox" 
+                                      checked={isVisible} 
+                                      onChange={() => {}} // Handle click in parent div
+                                      className="w-3 h-3 rounded border-slate-300 text-[#20398B] focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                                    />
+                                    <div 
+                                      className={`w-2 h-2 rounded-full shadow-sm ring-1 ring-black/5 flex-shrink-0 transition-opacity ${isVisible ? 'opacity-100' : 'opacity-30'}`} 
+                                      style={{ backgroundColor: color }}
+                                    ></div>
+                                    <span className={`font-medium text-slate-700 text-[11px] truncate leading-tight transition-colors ${isVisible ? '' : 'text-slate-400'}`}>{team.name}</span>
+                                </div>
+                                <span className={`text-[10px] font-mono font-bold px-1 py-px rounded ml-1 flex-shrink-0 transition-colors ${isVisible ? 'text-[#20398B] bg-slate-100' : 'text-slate-400 bg-slate-50'}`}>
+                                  {team.tccs.length}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+              )}
+          </div>
+       )}
     </div>
   );
 };

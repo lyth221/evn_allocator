@@ -1,16 +1,18 @@
 import React, { useMemo, useState } from 'react';
-import type { Team } from '../types';
+import type { Team, TCC } from '../types';
 import { TeamCard } from './TeamCard';
-import { Download, LayoutGrid, List, Map } from 'lucide-react';
+import { Download, LayoutGrid, List, Map, ChevronDown, ArrowRightLeft } from 'lucide-react';
 import { MapResults } from './MapResults';
 import * as XLSX from 'xlsx';
 
 interface ResultsProps {
   teams: Team[];
+  onMoveTcc?: (tcc: TCC, fromTeamId: string, toTeamId: string) => void;
 }
 
-export const Results: React.FC<ResultsProps> = ({ teams }) => {
+export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'table' | 'map'>('table');
+  const [movingRowKey, setMovingRowKey] = useState<string | null>(null);
   
   const exportToExcel = () => {
     // ... (keep existing)
@@ -97,29 +99,35 @@ export const Results: React.FC<ResultsProps> = ({ teams }) => {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 border-l-4 border-[#20398B]">
-              <p className="text-slate-500 text-xs font-medium">Tổng số khách hàng</p>
-              <p className="text-xl font-bold text-slate-800 mt-1">{stats?.totalCustomers.toLocaleString()}</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-2 border-l-2 border-[#20398B]">
+              <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wide">Tổng số khách hàng</p>
+              <p className="text-base font-bold text-slate-800 mt-0.5">{stats?.totalCustomers.toLocaleString()}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 border-l-4 border-indigo-500">
-              <p className="text-slate-500 text-xs font-medium">Trung bình mỗi nhóm</p>
-              <p className="text-xl font-bold text-slate-800 mt-1">{stats?.avgCustomers.toLocaleString()}</p>
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-2 border-l-2 border-indigo-500">
+              <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wide">Trung bình mỗi nhóm</p>
+              <p className="text-base font-bold text-slate-800 mt-0.5">{stats?.avgCustomers.toLocaleString()}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 border-l-4 border-emerald-500">
-              <p className="text-slate-500 text-xs font-medium">Tổng quãng đường ước tính</p>
-              <p className="text-xl font-bold text-slate-800 mt-1">{stats?.totalDistance.toFixed(1)} km</p>
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-2 border-l-2 border-emerald-500">
+              <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wide">Tổng quãng đường ước tính</p>
+              <p className="text-base font-bold text-slate-800 mt-0.5">{stats?.totalDistance.toFixed(1)} km</p>
           </div>
       </div>
       
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {teams.map((team, idx) => (
-            <TeamCard key={team.id} team={team} index={idx} />
+            <TeamCard 
+              key={team.id} 
+              team={team} 
+              index={idx} 
+              allTeams={teams} 
+              onMoveTcc={onMoveTcc} 
+            />
             ))}
         </div>
       ) : viewMode === 'map' ? (
-        <MapResults teams={teams} />
+        <MapResults teams={teams} onMoveTcc={onMoveTcc} />
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
              <div className="overflow-x-auto max-h-[600px]">
@@ -133,6 +141,7 @@ export const Results: React.FC<ResultsProps> = ({ teams }) => {
                             <th className="px-6 py-3 font-extrabold border-b border-slate-200 text-right">Khách Hàng (SL)</th>
                             <th className="px-6 py-3 font-extrabold border-b border-slate-200 text-right">Vĩ độ (Lat)</th>
                             <th className="px-6 py-3 font-extrabold border-b border-slate-200 text-right">Kinh độ (Lng)</th>
+                            <th className="px-6 py-3 font-extrabold border-b border-slate-200 text-center">Tác vụ</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -145,6 +154,60 @@ export const Results: React.FC<ResultsProps> = ({ teams }) => {
                                 <td className="px-6 py-3 text-right text-slate-700 font-mono bg-slate-50/50">{row.SL_VITRI}</td>
                                 <td className="px-6 py-3 text-right text-slate-500 font-mono">{row.LATITUDE}</td>
                                 <td className="px-6 py-3 text-right text-slate-500 font-mono">{row.LONGITUDE}</td>
+                                <td className="px-6 py-3 text-center">
+                                    {onMoveTcc && (
+                                        <div className="relative inline-block">
+                                            <button
+                                                onClick={() => {
+                                                    const key = `${row.teamId}-${row.MA_TRAM}`;
+                                                    setMovingRowKey(movingRowKey === key ? null : key);
+                                                }}
+                                                className={`flex items-center gap-1.5 px-2 py-1.5 rounded transition-all text-xs font-medium border ${movingRowKey === `${row.teamId}-${row.MA_TRAM}` ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600'}`}
+                                            >
+                                                <ArrowRightLeft className="w-3.5 h-3.5" />
+                                                <span>Chuyển</span>
+                                            </button>
+
+                                            {movingRowKey === `${row.teamId}-${row.MA_TRAM}` && (
+                                                <div className="absolute right-0 top-full mt-1 z-[100] w-64 bg-white rounded-lg shadow-xl border border-slate-200 p-3 animate-fade-in-down text-left">
+                                                    <div className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-wider">
+                                                        Chọn nhóm đích:
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-1.5">
+                                                        {teams.filter(t => t.id !== row.teamId).map(t => {
+                                                            // Calculate color index based on original list index
+                                                            const originalIdx = teams.findIndex(team => team.id === t.id);
+                                                            const color = ['#ef4444', '#3b82f6', '#22c55e', '#f97316', '#a855f7', '#06b6d4', '#e11d48', '#8b5cf6', '#10b981', '#f59e0b'][originalIdx % 10]; // TEAM_COLORS duplicated here for simplicity or export it
+
+                                                            return (
+                                                                <button
+                                                                    key={t.id}
+                                                                    onClick={() => {
+                                                                        const tcc: TCC = {
+                                                                            MA_TRAM: row.MA_TRAM,
+                                                                            LATITUDE: row.LATITUDE,
+                                                                            LONGITUDE: row.LONGITUDE,
+                                                                            SL_VITRI: row.SL_VITRI,
+                                                                            TEN_TRAM: row.TEN_TRAM
+                                                                        };
+                                                                        onMoveTcc(tcc, row.teamId, t.id);
+                                                                        setMovingRowKey(null);
+                                                                    }}
+                                                                    className="flex items-center justify-center p-1.5 rounded border hover:shadow-sm transition-all text-[10px] font-semibold text-slate-600 gap-1 bg-slate-50 hover:bg-white"
+                                                                    style={{ borderColor: color }}
+                                                                    title={`Chuyển sang ${t.name}`}
+                                                                >
+                                                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                                                                    {t.name.replace('Nhóm ', '#')}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </td>
                             </tr>
                         ))}
                     </tbody>
