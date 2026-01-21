@@ -21,6 +21,7 @@ export const Results: React.FC<ResultsProps> = ({ teams }) => {
         Team_Total_SL: t.totalCustomers,
         Team_Distance_KM: t.estimatedDistanceKm,
         MA_TRAM: tcc.MA_TRAM,
+        TEN_TRAM: tcc.TEN_TRAM || '',
         SL_VITRI: tcc.SL_VITRI,
         LAT: tcc.LATITUDE,
         LNG: tcc.LONGITUDE
@@ -128,6 +129,7 @@ export const Results: React.FC<ResultsProps> = ({ teams }) => {
                             <th className="px-6 py-3 font-extrabold border-b border-slate-200">Nhóm (Team)</th>
                             <th className="px-6 py-3 font-extrabold border-b border-slate-200">STT</th>
                             <th className="px-6 py-3 font-extrabold border-b border-slate-200">Mã Trạm</th>
+                            <th className="px-6 py-3 font-extrabold border-b border-slate-200">Tên Trạm</th>
                             <th className="px-6 py-3 font-extrabold border-b border-slate-200 text-right">Khách Hàng (SL)</th>
                             <th className="px-6 py-3 font-extrabold border-b border-slate-200 text-right">Vĩ độ (Lat)</th>
                             <th className="px-6 py-3 font-extrabold border-b border-slate-200 text-right">Kinh độ (Lng)</th>
@@ -139,6 +141,7 @@ export const Results: React.FC<ResultsProps> = ({ teams }) => {
                                 <td className="px-6 py-3 font-medium text-[#20398B]">{row.teamName}</td>
                                 <td className="px-6 py-3 text-slate-500 font-mono">{idx + 1}</td>
                                 <td className="px-6 py-3 font-medium text-slate-900">{row.MA_TRAM}</td>
+                                <td className="px-6 py-3 text-slate-600 font-mono text-xs">{row.TEN_TRAM}</td>
                                 <td className="px-6 py-3 text-right text-slate-700 font-mono bg-slate-50/50">{row.SL_VITRI}</td>
                                 <td className="px-6 py-3 text-right text-slate-500 font-mono">{row.LATITUDE}</td>
                                 <td className="px-6 py-3 text-right text-slate-500 font-mono">{row.LONGITUDE}</td>

@@ -23,6 +23,7 @@ export const parseExcel = (file: File): Promise<TCC[]> => {
           // Requirement says: MA_TRAM, LATITUDE, LONGITUDE, SL_VITRI
           return {
             MA_TRAM: String(row['MA_TRAM'] || ''),
+            TEN_TRAM: String(row['TEN_TRAM'] || ''),
             LATITUDE: Number(row['LATITUDE'] || 0),
             LONGITUDE: Number(row['LONGITUDE'] || 0),
             SL_VITRI: Number(row['SL_VITRI'] || 0),

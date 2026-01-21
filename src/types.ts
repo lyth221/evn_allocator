@@ -1,5 +1,6 @@
 export interface TCC {
   MA_TRAM: string;
+  TEN_TRAM?: string;
   LATITUDE: number;
   LONGITUDE: number;
   SL_VITRI: number;

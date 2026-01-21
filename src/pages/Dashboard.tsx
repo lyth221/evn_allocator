@@ -70,7 +70,7 @@ export const Dashboard = () => {
   };
 
   return (
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5 h-[calc(100vh-8rem)]">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 h-[calc(100vh-8rem)]">
          <div className="flex flex-col gap-4 h-full overflow-y-auto custom-scrollbar pr-1">
             
             {/* Project Setup Card */}
