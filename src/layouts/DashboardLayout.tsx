@@ -7,8 +7,9 @@ import {
   Menu, 
   Settings, 
   ChevronRight,
-  PieChart,
-  History
+  Users,
+  // PieChart,
+  // History
 } from 'lucide-react';
 
 
@@ -26,8 +27,8 @@ export const DashboardLayout = () => {
 
   const navItems = [
     { label: 'Phân bổ', icon: LayoutDashboard, path: '/dashboard' },
-    { label: 'Lịch sử', icon: History, path: '/dashboard/history' },
-    { label: 'Báo cáo', icon: PieChart, path: '/dashboard/reports' }, 
+    // { label: 'Lịch sử', icon: History, path: '/dashboard/history' },
+    // { label: 'Báo cáo', icon: PieChart, path: '/dashboard/reports' }, 
     { label: 'Cài đặt', icon: Settings, path: '/dashboard/settings' }, 
   ];
 
@@ -41,8 +42,8 @@ export const DashboardLayout = () => {
       >
         <div className="h-16 flex items-center justify-center border-b border-slate-100">
           <div className="flex items-center gap-3 font-bold text-xl tracking-tight text-[#20398B]">
-             <img src="/evn.svg" alt="Classic Logo" className="w-8 h-8 object-contain" />
-             {isSidebarOpen && <span className="animate-fade-in">EVN Tool</span>}
+             <Users className="w-8 h-8 text-[#20398B]" />
+             {isSidebarOpen && <span className="animate-fade-in">JOB Tool</span>}
           </div>
         </div>
 

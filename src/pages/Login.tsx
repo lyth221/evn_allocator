@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Eye, EyeOff, Users } from 'lucide-react';
 
 export const Login = () => {
   const [username, setUsername] = useState('admin');
@@ -29,17 +29,16 @@ export const Login = () => {
       <div className="text-center mb-8 animate-fade-in">
         <div className="inline-flex justify-center mb-4">
            {/* Logo Image */}
-           <img 
-             src="/evn.svg" 
-             alt="EVN Logo" 
-             className="h-20 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300"
+           {/* Logo Image */}
+           <Users 
+             className="h-20 w-auto text-[#20398B] drop-shadow-sm hover:scale-105 transition-transform duration-300"
            />
         </div>
         <h1 className="text-3xl font-extrabold text-[#20398B] tracking-tight">
           Chào mừng trở lại
         </h1>
         <p className="text-slate-500 mt-2 text-sm font-medium">
-          Đăng nhập vào <span className="font-bold bg-gradient-to-r from-[#20398B] to-indigo-600 bg-clip-text text-transparent">EVN Allocator</span>
+          Đăng nhập vào <span className="font-bold bg-gradient-to-r from-[#20398B] to-indigo-600 bg-clip-text text-transparent">JOB Allocator</span>
         </p>
       </div>
 
@@ -130,7 +129,7 @@ export const Login = () => {
 
       {/* Footer */}
       <p className="mt-8 text-center text-xs text-slate-400">
-        © 2026 EVN SPC. All rights reserved.
+        © 2026 JOB System. All rights reserved.
       </p>
     </div>
   );

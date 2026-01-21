@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { Team } from '../types';
-import { UtilityPole } from 'lucide-react';
+import { Triangle } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import 'leaflet/dist/leaflet.css';
 
@@ -27,26 +27,27 @@ const createCustomIcon = (color: string) => {
   const iconHtml = renderToStaticMarkup(
     <div style={{
       backgroundColor: color,
-      width: '32px',
-      height: '32px',
+      width: '36px',
+      height: '36px',
       borderRadius: '50%',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      border: '2px solid white',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-      color: 'white'
+      border: '1.5px solid white',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1)',
+      color: 'white',
+      position: 'relative'
     }}>
-      <UtilityPole size={20} />
+      <Triangle size={16} fill="white" strokeWidth={3} className="mt-[2px]" />
     </div>
   );
 
   return L.divIcon({
     html: iconHtml,
     className: 'custom-marker',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32]
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -36]
   });
 };
 

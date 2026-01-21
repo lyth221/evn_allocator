@@ -7,7 +7,7 @@ export interface HistoryRecord {
   teams: any[]; // Storing full team structure
 }
 
-const STORAGE_KEY = 'evn_allocation_history';
+const STORAGE_KEY = 'job_allocation_history';
 
 // Mock initial data to simulate "loading from JSON"
 const MOCK_HISTORY: HistoryRecord[] = [
