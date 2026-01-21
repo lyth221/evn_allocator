@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { Team, TCC } from '../types';
 import { TeamCard } from './TeamCard';
-import { Download, LayoutGrid, List, Map, ChevronDown, ArrowRightLeft } from 'lucide-react';
+import { Download, LayoutGrid, List, Map, ArrowRightLeft } from 'lucide-react';
 import { MapResults } from './MapResults';
 import * as XLSX from 'xlsx';
 
