@@ -7,7 +7,7 @@ import type { ProcessingParams, TCC, Team } from '../types';
 import { parseExcel } from '../utils/excel';
 import { runClustering } from '../utils/clustering';
 import { estimateTeamTravelDistance } from '../utils/math';
-import { LayoutDashboard, Zap, Database, AlertCircle, Map, List } from 'lucide-react';
+import { LayoutDashboard, Zap, Database, AlertCircle, Map, List, ChevronsLeft, ChevronsRight, Settings } from 'lucide-react';
 import { saveHistory } from '../utils/historyStorage';
 
 export const Dashboard = () => {
@@ -21,6 +21,7 @@ export const Dashboard = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<'table' | 'map'>('table');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleFileSelect = async (selectedFile: File) => {
     setFile(selectedFile);
@@ -104,42 +105,84 @@ export const Dashboard = () => {
   };
 
   return (
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 h-[calc(100vh-8rem)]">
-         <div className="flex flex-col gap-4 h-full overflow-y-auto custom-scrollbar pr-1">
+      <div className={`grid grid-cols-1 transition-all duration-300 ease-in-out gap-4 h-[calc(100vh-8rem)] ${isSidebarCollapsed ? 'lg:grid-cols-[60px_1fr]' : 'lg:grid-cols-[300px_1fr]'}`}>
+         <div className="flex flex-col gap-3 h-full overflow-y-auto custom-scrollbar pr-1 transition-all">
             
-            {/* Project Setup Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-none">
-                <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                   <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                     <LayoutDashboard className="w-5 h-5 text-[#20398B]" /> Thiết lập dự án
-                   </h3>
-                   {tccs.length > 0 && (
-                      <span className="text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1">
-                        <Zap className="w-3 h-3 fill-current" /> {tccs.length}
-                      </span>
-                   )}
-                </div>
-                
-                <div className="p-4">
-                   <p className="text-slate-500 text-sm mb-4">
-                     Cấu hình tham số phân bổ đội nhóm và tải lên bản dữ liệu.
-                   </p>
-                   <FileUpload onFileSelect={handleFileSelect} selectedFileName={file?.name} />
-                </div>
-            </div>
+            {/* Collapse Toggle Header (visible when expanded) */}
+            {!isSidebarCollapsed && (
+               <div className="flex justify-end mb-1">
+                  <button 
+                    onClick={() => setIsSidebarCollapsed(true)} 
+                    className="text-slate-400 hover:text-[#20398B] p-1 rounded hover:bg-slate-100 transition-colors"
+                    title="Thu gọn"
+                  >
+                     <ChevronsLeft size={20} />
+                  </button>
+               </div>
+            )}
 
-            <ConfigForm 
-              params={params} 
-              onChange={handleParamChange} 
-              onSubmit={handleProcess}
-              disabled={isProcessing || tccs.length === 0}
-            />
-            
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-sm animate-fade-in flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
+            {/* Sidebar Content */}
+            {isSidebarCollapsed ? (
+               // Minimized State
+               <div className="flex flex-col items-center gap-4 py-2">
+                  <button 
+                    onClick={() => setIsSidebarCollapsed(false)} 
+                    className="text-slate-400 hover:text-[#20398B] p-2 rounded hover:bg-slate-100 transition-colors mb-4"
+                    title="Mở rộng"
+                  >
+                     <ChevronsRight size={20} />
+                  </button>
+
+                  <div className="w-10 h-10 rounded-lg bg-white shadow-sm border border-slate-200 flex items-center justify-center text-[#20398B] hover:border-[#20398B] transition-colors relative group cursor-pointer" title="Thiết lập dự án">
+                      <LayoutDashboard size={20} />
+                      {tccs.length > 0 && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white"></span>
+                      )}
+                  </div>
+                  
+                  <div className="w-10 h-10 rounded-lg bg-white shadow-sm border border-slate-200 flex items-center justify-center text-slate-500 hover:text-[#20398B] hover:border-[#20398B] transition-colors cursor-pointer" title="Cấu hình tham số">
+                      <Settings size={20} />
+                  </div>
+               </div>
+            ) : (
+               // Expanded State
+               <>
+                  {/* Project Setup Card */}
+                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-none">
+                      <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                         <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                           <LayoutDashboard className="w-5 h-5 text-[#20398B]" /> Thiết lập dự án
+                         </h3>
+                         {tccs.length > 0 && (
+                            <span className="text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1">
+                              <Zap className="w-3 h-3 fill-current" /> {tccs.length}
+                            </span>
+                         )}
+                      </div>
+                      
+                      <div className="p-3">
+                         <p className="text-slate-500 text-sm mb-2">
+                           Cấu hình tham số phân bổ đội nhóm và tải lên bản dữ liệu.
+                         </p>
+                         <FileUpload onFileSelect={handleFileSelect} selectedFileName={file?.name} />
+                      </div>
+                  </div>
+
+                  <ConfigForm 
+                    params={params} 
+                    onChange={handleParamChange} 
+                    onSubmit={handleProcess}
+                    disabled={tccs.length === 0}
+                    isProcessing={isProcessing}
+                  />
+                  
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-sm animate-fade-in flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <span>{error}</span>
+                    </div>
+                  )}
+               </>
             )}
          </div>
 

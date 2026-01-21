@@ -190,7 +190,7 @@ export const MapResults: React.FC<MapResultsProps> = ({ teams, showTeamColor = t
        </MapContainer>
        
        {showTeamColor && teams.length > 0 && (
-          <div className={`absolute top-2 right-2 z-[1000] bg-white/95 backdrop-blur-md rounded-md shadow-sm border border-slate-200 transition-all duration-300 overflow-hidden flex flex-col ${isLegendOpen ? 'w-40 max-h-[calc(100%-1rem)]' : 'w-auto h-auto'}`}>
+          <div className={`absolute top-2 right-2 z-[1000] bg-white/95 backdrop-blur-md rounded-md shadow-sm border border-slate-200 transition-all duration-300 overflow-hidden flex flex-col ${isLegendOpen ? 'w-auto min-w-[200px] max-w-[300px] max-h-[calc(100%-1rem)]' : 'w-auto h-auto'}`}>
               <button 
                 onClick={() => setIsLegendOpen(!isLegendOpen)}
                 className={`flex items-center justify-between w-full px-2.5 py-1.5 bg-slate-50/80 hover:bg-slate-100 transition-colors border-b ${isLegendOpen ? 'border-slate-100' : 'border-transparent'}`}
@@ -208,27 +208,26 @@ export const MapResults: React.FC<MapResultsProps> = ({ teams, showTeamColor = t
                     {teams.map((team, idx) => {
                         const color = TEAM_COLORS[idx % TEAM_COLORS.length];
                         const isVisible = !hiddenTeamIds.has(team.id);
+                        const totalCustomers = team.tccs.reduce((sum, tcc) => sum + tcc.SL_VITRI, 0);
+
                         return (
                             <div 
                               key={team.id} 
-                              className="flex items-center justify-between p-1 rounded hover:bg-slate-50 transition-colors cursor-pointer select-none"
+                              className="flex items-center p-1 rounded hover:bg-slate-50 transition-colors cursor-pointer select-none gap-2"
                               onClick={() => toggleTeamVisibility(team.id)}
                             >
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                    <input 
-                                      type="checkbox" 
-                                      checked={isVisible} 
-                                      onChange={() => {}} // Handle click in parent div
-                                      className="w-3 h-3 rounded border-slate-300 text-[#20398B] focus:ring-0 focus:ring-offset-0 cursor-pointer"
-                                    />
-                                    <div 
-                                      className={`w-2 h-2 rounded-full shadow-sm ring-1 ring-black/5 flex-shrink-0 transition-opacity ${isVisible ? 'opacity-100' : 'opacity-30'}`} 
-                                      style={{ backgroundColor: color }}
-                                    ></div>
-                                    <span className={`font-medium text-slate-700 text-[11px] truncate leading-tight transition-colors ${isVisible ? '' : 'text-slate-400'}`}>{team.name}</span>
-                                </div>
-                                <span className={`text-[10px] font-mono font-bold px-1 py-px rounded ml-1 flex-shrink-0 transition-colors ${isVisible ? 'text-[#20398B] bg-slate-100' : 'text-slate-400 bg-slate-50'}`}>
-                                  {team.tccs.length}
+                                <input 
+                                  type="checkbox" 
+                                  checked={isVisible} 
+                                  onChange={() => {}} // Handle click in parent div
+                                  className="w-3 h-3 rounded border-slate-300 text-[#20398B] focus:ring-0 focus:ring-offset-0 cursor-pointer flex-shrink-0"
+                                />
+                                <div 
+                                  className={`w-2 h-2 rounded-full shadow-sm ring-1 ring-black/5 flex-shrink-0 transition-opacity ${isVisible ? 'opacity-100' : 'opacity-30'}`} 
+                                  style={{ backgroundColor: color }}
+                                ></div>
+                                <span className={`font-medium text-slate-700 text-[11px] whitespace-nowrap transition-colors ${isVisible ? '' : 'text-slate-400'}`}>
+                                    {team.name} <span className="text-slate-300 mx-0.5">|</span> Trạm: {team.tccs.length} <span className="text-slate-300 mx-0.5">|</span> KH: {totalCustomers.toLocaleString()}
                                 </span>
                             </div>
                         );
