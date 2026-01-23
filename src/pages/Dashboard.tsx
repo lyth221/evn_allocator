@@ -75,6 +75,12 @@ export const Dashboard = () => {
     });
   };
 
+  const handleToggleLockTeam = (teamId: string) => {
+    setTeams(prevTeams => prevTeams.map(t => 
+      t.id === teamId ? { ...t, isLocked: !t.isLocked } : t
+    ));
+  };
+
   const handleProcess = () => {
     if (tccs.length === 0) {
       setError("Vui lòng tải lên file Excel hợp lệ trước.");
@@ -85,16 +91,53 @@ export const Dashboard = () => {
     // Simulating async 
     setTimeout(() => {
        try {
-         const resultTeams = runClustering(tccs, params);
-         setTeams(resultTeams);
+         // Separate locked teams and their TCCs
+         const lockedTeams = teams.filter(t => t.isLocked);
+         const lockedTccIds = new Set(lockedTeams.flatMap(t => t.tccs.map(item => item.MA_TRAM)));
+         
+         // Filter out TCCs that are already in locked teams
+         const availableTCCs = tccs.filter(tcc => !lockedTccIds.has(tcc.MA_TRAM));
+
+         const lockedTeamsCount = lockedTeams.length;
+         const remainingTeamsCount = params.numberOfTeams - lockedTeamsCount;
+
+         let finalTeams: Team[] = [];
+
+         if (remainingTeamsCount <= 0 && availableTCCs.length > 0) {
+             setError("Số lượng nhóm cần phân bổ ít hơn hoặc bằng số nhóm đã chốt. Vui lòng tăng số lượng nhóm hoặc mở khóa bớt.");
+             setIsProcessing(false);
+             return;
+         }
+
+         if (availableTCCs.length === 0) {
+             finalTeams = lockedTeams;
+         } else {
+             // Run clustering for remaining TCCs
+             const processingParams = {
+                 ...params,
+                 numberOfTeams: remainingTeamsCount
+             };
+             const newTeams = runClustering(availableTCCs, processingParams);
+             
+             // Shift IDs and Names for new teams
+             const shiftedNewTeams = newTeams.map((t, idx) => ({
+                 ...t,
+                 id: `team_${Date.now()}_${idx}`, 
+                 name: `Nhóm ${lockedTeamsCount + idx + 1}`
+             }));
+
+             finalTeams = [...lockedTeams, ...shiftedNewTeams];
+         }
+
+         setTeams(finalTeams);
          setError(null);
          
          // Auto-save to history
          saveHistory({
              fileName: file?.name || `Phân bổ ${new Date().toLocaleString('vi-VN')}`,
              numberOfTeams: params.numberOfTeams,
-             totalCustomers: tccs.reduce((acc, t) => acc + t.SL_VITRI, 0), // Calculate total from TCCs or teams
-             teams: resultTeams
+             totalCustomers: tccs.reduce((acc, t) => acc + t.SL_VITRI, 0),
+             teams: finalTeams
          });
          
        } catch (e: any) {
@@ -190,7 +233,7 @@ export const Dashboard = () => {
             {teams.length > 0 ? (
                <div className="h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-                      <Results teams={teams} onMoveTcc={handleMoveTcc} />
+                      <Results teams={teams} onMoveTcc={handleMoveTcc} onToggleLock={handleToggleLockTeam} />
                    </div>
                    {/* Hidden MapResults instance just for rendering logic consistency if needed, but actually Results usually renders List or Map depending on its internal logic? 
                        Wait, the user wants the map to update. The 'Results' component (results.tsx) likely renders the tabs or the view.

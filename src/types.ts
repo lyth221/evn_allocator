@@ -12,6 +12,7 @@ export interface Team {
   tccs: TCC[];
   totalCustomers: number;
   estimatedDistanceKm: number;
+  isLocked?: boolean;
 }
 
 export interface ProcessingParams {

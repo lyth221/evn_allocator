@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Users, Navigation, ArrowRightLeft } from 'lucide-react';
+import { MapPin, Users, Navigation, ArrowRightLeft, Lock, Unlock } from 'lucide-react';
 import type { Team, TCC } from '../types';
 
 interface TeamCardProps {
@@ -7,6 +7,7 @@ interface TeamCardProps {
   index: number;
   allTeams: Team[];
   onMoveTcc?: (tcc: TCC, fromTeamId: string, toTeamId: string) => void;
+  onToggleLock?: (teamId: string) => void;
 }
 
 const TEAM_COLORS = [
@@ -14,21 +15,36 @@ const TEAM_COLORS = [
   '#06b6d4', '#e11d48', '#8b5cf6', '#10b981', '#f59e0b'
 ];
 
-export const TeamCard: React.FC<TeamCardProps> = ({ team, index, allTeams, onMoveTcc }) => {
+export const TeamCard: React.FC<TeamCardProps> = ({ team, index, allTeams, onMoveTcc, onToggleLock }) => {
   const [movingTccId, setMovingTccId] = useState<string | null>(null);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow group animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
+    <div className={`bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col hover:shadow-md transition-all group animate-fade-in ${team.isLocked ? 'border-amber-200 ring-2 ring-amber-100' : 'border-slate-200'}`} style={{ animationDelay: `${index * 0.05}s` }}>
       {/* Header */}
-      <div className="bg-slate-50 border-b border-slate-100 p-4 flex items-center justify-between">
+      <div className={`border-b p-4 flex items-center justify-between ${team.isLocked ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'}`}>
         <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-            <span className="w-8 h-8 rounded-full bg-[#20398B]/10 text-[#20398B] flex items-center justify-center text-sm font-bold border border-[#20398B]/10">
+            <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border ${team.isLocked ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-[#20398B]/10 text-[#20398B] border-[#20398B]/10'}`}>
                 {index + 1}
             </span>
-            {team.name}
+            <span className={team.isLocked ? 'text-amber-900' : ''}>{team.name}</span>
         </h3>
-        <div className="px-3 py-1 bg-white border border-slate-200 rounded-full text-xs font-semibold text-slate-500 shadow-sm">
-            {team.tccs.length} Trạm
+        <div className="flex items-center gap-2">
+            <div className={`px-3 py-1 border rounded-full text-xs font-semibold shadow-sm ${team.isLocked ? 'bg-white border-amber-200 text-amber-600' : 'bg-white border-slate-200 text-slate-500'}`}>
+                {team.tccs.length} Trạm
+            </div>
+            {onToggleLock && (
+                <button
+                    onClick={() => onToggleLock(team.id)}
+                    className={`p-1.5 rounded-lg border transition-all ${
+                        team.isLocked 
+                        ? 'bg-amber-100 text-amber-600 border-amber-200 hover:bg-amber-200' 
+                        : 'bg-white text-slate-300 border-transparent hover:text-indigo-600 hover:bg-indigo-50'
+                    }`}
+                    title={team.isLocked ? "Mở khóa nhóm" : "Chốt nhóm"}
+                >
+                    {team.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                </button>
+            )}
         </div>
       </div>
 
@@ -73,7 +89,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, index, allTeams, onMov
                                         <span className="text-xs font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex-shrink-0">
                                             {tcc.SL_VITRI} KH
                                         </span>
-                                        {onMoveTcc && (
+                                        {onMoveTcc && !team.isLocked && (
                                            <button 
                                               onClick={() => setMovingTccId(movingTccId === tcc.MA_TRAM ? null : tcc.MA_TRAM)}
                                               className={`p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-colors ${movingTccId === tcc.MA_TRAM ? 'bg-indigo-50 text-indigo-600' : ''}`}
@@ -98,7 +114,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, index, allTeams, onMov
                                     Chọn nhóm chuyển đến:
                                  </div>
                                  <div className="grid grid-cols-3 gap-1">
-                                    {allTeams.filter(t => t.id !== team.id).map((targetTeam) => {
+                                    {allTeams.filter(t => t.id !== team.id && !t.isLocked).map((targetTeam) => {
                                       const originalIdx = allTeams.findIndex(t => t.id === targetTeam.id);
                                       const targetColor = TEAM_COLORS[originalIdx % TEAM_COLORS.length];
                                       

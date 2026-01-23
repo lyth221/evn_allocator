@@ -1,16 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import type { Team, TCC } from '../types';
 import { TeamCard } from './TeamCard';
-import { Download, LayoutGrid, List, Map, ArrowRightLeft } from 'lucide-react';
+import { Download, LayoutGrid, List, Map, ArrowRightLeft, Lock, Unlock } from 'lucide-react';
 import { MapResults } from './MapResults';
 import * as XLSX from 'xlsx';
 
 interface ResultsProps {
   teams: Team[];
   onMoveTcc?: (tcc: TCC, fromTeamId: string, toTeamId: string) => void;
+  onToggleLock?: (teamId: string) => void;
 }
 
-export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc }) => {
+export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc, onToggleLock }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'table' | 'map'>('table');
   const [movingRowKey, setMovingRowKey] = useState<string | null>(null);
   
@@ -51,7 +52,8 @@ export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc }) => {
         team.tccs.map(tcc => ({
             ...tcc,
             teamName: team.name,
-            teamId: team.id
+            teamId: team.id,
+            isLocked: team.isLocked
         }))
     );
   }, [teams]);
@@ -123,11 +125,12 @@ export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc }) => {
               index={idx} 
               allTeams={teams} 
               onMoveTcc={onMoveTcc} 
+              onToggleLock={onToggleLock}
             />
             ))}
         </div>
       ) : viewMode === 'map' ? (
-        <MapResults teams={teams} onMoveTcc={onMoveTcc} />
+        <MapResults teams={teams} onMoveTcc={onMoveTcc} onToggleLock={onToggleLock} />
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
              <div className="overflow-x-auto max-h-[600px]">
@@ -145,17 +148,37 @@ export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc }) => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        {flatData.map((row, idx) => (
-                            <tr key={`${row.teamId}-${row.MA_TRAM}`} className="hover:bg-slate-50/80 transition-colors">
-                                <td className="px-6 py-3 font-medium text-[#20398B]">{row.teamName}</td>
-                                <td className="px-6 py-3 text-slate-500 font-mono">{idx + 1}</td>
-                                <td className="px-6 py-3 font-medium text-slate-900">{row.MA_TRAM}</td>
-                                <td className="px-6 py-3 text-slate-600 font-mono text-xs">{row.TEN_TRAM}</td>
-                                <td className="px-6 py-3 text-right text-slate-700 font-mono bg-slate-50/50">{row.SL_VITRI}</td>
-                                <td className="px-6 py-3 text-right text-slate-500 font-mono">{row.LATITUDE}</td>
-                                <td className="px-6 py-3 text-right text-slate-500 font-mono">{row.LONGITUDE}</td>
-                                <td className="px-6 py-3 text-center">
-                                    {onMoveTcc && (
+                        {flatData.map((row, idx) => {
+                            const isNewGroup = idx === 0 || flatData[idx - 1].teamId !== row.teamId;
+                            return (
+                                <tr key={`${row.teamId}-${row.MA_TRAM}`} className={`hover:bg-slate-50/80 transition-colors ${row.isLocked ? 'bg-amber-50/30' : ''}`}>
+                                    <td className="px-6 py-3 font-medium text-[#20398B] border-r border-slate-50 relative group/cell">
+                                        {isNewGroup ? (
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className={row.isLocked ? "text-amber-700 font-bold" : ""}>{row.teamName}</span>
+                                                {onToggleLock && (
+                                                    <button
+                                                        onClick={() => onToggleLock(row.teamId)}
+                                                        className={`p-1 rounded transition-all ${row.isLocked ? 'text-amber-600 bg-amber-100 hover:bg-amber-200' : 'text-slate-300 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                                                        title={row.isLocked ? "Mở khóa nhóm" : "Chốt nhóm"}
+                                                    >
+                                                        {row.isLocked ? <Lock size={14} /> : <Unlock size={14} />}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            /* Show generic text or just empty? Let's show faded name for context when scrolling */
+                                            <span className="opacity-0 text-xs">{row.teamName}</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-3 text-slate-500 font-mono">{idx + 1}</td>
+                                    <td className="px-6 py-3 font-medium text-slate-900">{row.MA_TRAM}</td>
+                                    <td className="px-6 py-3 text-slate-600 font-mono text-xs">{row.TEN_TRAM}</td>
+                                    <td className="px-6 py-3 text-right text-slate-700 font-mono bg-slate-50/50">{row.SL_VITRI}</td>
+                                    <td className="px-6 py-3 text-right text-slate-500 font-mono">{row.LATITUDE}</td>
+                                    <td className="px-6 py-3 text-right text-slate-500 font-mono">{row.LONGITUDE}</td>
+                                    <td className="px-6 py-3 text-center">
+                                    {onMoveTcc && !row.isLocked && (
                                         <div className="relative inline-block">
                                             <button
                                                 onClick={() => {
@@ -174,7 +197,7 @@ export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc }) => {
                                                         Chọn nhóm đích:
                                                     </div>
                                                     <div className="grid grid-cols-3 gap-1.5">
-                                                        {teams.filter(t => t.id !== row.teamId).map(t => {
+                                                        {teams.filter(t => t.id !== row.teamId && !t.isLocked).map(t => {
                                                             // Calculate color index based on original list index
                                                             const originalIdx = teams.findIndex(team => team.id === t.id);
                                                             const color = ['#ef4444', '#3b82f6', '#22c55e', '#f97316', '#a855f7', '#06b6d4', '#e11d48', '#8b5cf6', '#10b981', '#f59e0b'][originalIdx % 10]; // TEAM_COLORS duplicated here for simplicity or export it
@@ -209,7 +232,8 @@ export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc }) => {
                                     )}
                                 </td>
                             </tr>
-                        ))}
+                        );
+                        })}
                     </tbody>
                 </table>
              </div>
