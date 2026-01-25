@@ -133,7 +133,7 @@ export const Dashboard = () => {
              });
              
              // Assign meaningful names filling the gaps (e.g., if 2,3 locked, new ones become 1,4,5,6)
-             const shiftedNewTeams = newTeams.map((t, idx) => {
+             const shiftedNewTeams = newTeams.map((t) => {
                  let num = 1;
                  while (usedNumbers.has(num)) {
                      num++;
