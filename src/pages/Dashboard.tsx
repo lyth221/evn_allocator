@@ -103,14 +103,20 @@ export const Dashboard = () => {
 
          let finalTeams: Team[] = [];
 
-         if (remainingTeamsCount <= 0 && availableTCCs.length > 0) {
-             setError("Số lượng nhóm cần phân bổ ít hơn hoặc bằng số nhóm đã chốt. Vui lòng tăng số lượng nhóm hoặc mở khóa bớt.");
+         if (remainingTeamsCount < 0) { // Allow 0 if we just want to keep locked ones and no other data
+             setError("Số lượng nhóm cần phân bổ ít hơn số nhóm đã chốt. Vui lòng tăng số lượng nhóm hoặc mở khóa bớt.");
+             setIsProcessing(false);
+             return;
+         }
+         
+         if (remainingTeamsCount === 0 && availableTCCs.length > 0) {
+             setError("Không đủ số lượng nhóm để phân bổ các khách hàng còn lại. Vui lòng tăng số nhóm.");
              setIsProcessing(false);
              return;
          }
 
          if (availableTCCs.length === 0) {
-             finalTeams = lockedTeams;
+             finalTeams = [...lockedTeams];
          } else {
              // Run clustering for remaining TCCs
              const processingParams = {
@@ -119,15 +125,39 @@ export const Dashboard = () => {
              };
              const newTeams = runClustering(availableTCCs, processingParams);
              
-             // Shift IDs and Names for new teams
-             const shiftedNewTeams = newTeams.map((t, idx) => ({
-                 ...t,
-                 id: `team_${Date.now()}_${idx}`, 
-                 name: `Nhóm ${lockedTeamsCount + idx + 1}`
-             }));
+             // Identify used numbers from locked teams
+             const usedNumbers = new Set<number>();
+             lockedTeams.forEach(t => {
+                 const match = t.name.match(/Nhóm (\d+)/);
+                 if (match) usedNumbers.add(parseInt(match[1], 10));
+             });
+             
+             // Assign meaningful names filling the gaps (e.g., if 2,3 locked, new ones become 1,4,5,6)
+             const shiftedNewTeams = newTeams.map((t, idx) => {
+                 let num = 1;
+                 while (usedNumbers.has(num)) {
+                     num++;
+                 }
+                 usedNumbers.add(num);
+
+                 return {
+                     ...t,
+                     id: `team_${Date.now()}_${num}`, 
+                     name: `Nhóm ${num}`
+                 };
+             });
 
              finalTeams = [...lockedTeams, ...shiftedNewTeams];
          }
+
+         // Sort teams by numeric value in name to keep them ordered (Nhóm 1, Nhóm 2...)
+         finalTeams.sort((a, b) => {
+             const getNum = (name: string) => {
+                 const m = name.match(/Nhóm (\d+)/);
+                 return m ? parseInt(m[1], 10) : 9999;
+             };
+             return getNum(a.name) - getNum(b.name);
+         });
 
          setTeams(finalTeams);
          setError(null);
