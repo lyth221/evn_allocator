@@ -8,7 +8,7 @@ import {
   Settings, 
   ChevronRight,
   // PieChart,
-  // History
+  History
 } from 'lucide-react';
 
 
@@ -26,7 +26,7 @@ export const DashboardLayout = () => {
 
   const navItems = [
     { label: 'Phân bổ', icon: LayoutDashboard, path: '/dashboard' },
-    // { label: 'Lịch sử', icon: History, path: '/dashboard/history' },
+    { label: 'Lịch sử', icon: History, path: '/dashboard/history' },
     // { label: 'Báo cáo', icon: PieChart, path: '/dashboard/reports' }, 
     { label: 'Cài đặt', icon: Settings, path: '/dashboard/settings' }, 
   ];

@@ -7,52 +7,46 @@ export interface HistoryRecord {
   teams: any[]; // Storing full team structure
 }
 
-const STORAGE_KEY = 'job_allocation_history';
 
-// Mock initial data to simulate "loading from JSON"
-const MOCK_HISTORY: HistoryRecord[] = [
-  {
-    id: 'mock-1',
-    timestamp: Date.now() - 86400000 * 2, // 2 days ago
-    fileName: 'dulieu_thang12_2025.xlsx',
-    numberOfTeams: 4,
-    totalCustomers: 450,
-    teams: [] // Empty for mock to save space
-  },
-  {
-    id: 'mock-2',
-    timestamp: Date.now() - 86400000 * 5, // 5 days ago
-    fileName: 'dulieu_thang11_2025.xlsx',
-    numberOfTeams: 6,
-    totalCustomers: 620,
-    teams: []
-  }
-];
 
-export const getHistory = (): HistoryRecord[] => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  if (!data) {
-    // If empty, initialize with mock data/file json
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(MOCK_HISTORY));
-    return MOCK_HISTORY;
+// Note: We are now using async APIs to talk to the server
+// The synchronous functions are deprecated but kept for compatibility until refactoring is complete
+
+export const getHistory = async (): Promise<HistoryRecord[]> => {
+  try {
+      const res = await fetch('/api/history-records');
+      if (res.ok) {
+          return await res.json();
+      }
+      return [];
+  } catch (e) {
+      console.error("Failed to fetch history records", e);
+      return [];
   }
-  return JSON.parse(data);
 };
 
-export const saveHistory = (record: Omit<HistoryRecord, 'id' | 'timestamp'>) => {
-  const history = getHistory();
+export const saveHistory = async (record: Omit<HistoryRecord, 'id' | 'timestamp'>) => {
   const newRecord: HistoryRecord = {
     ...record,
     id: crypto.randomUUID(),
     timestamp: Date.now()
   };
   
-  const updatedHistory = [newRecord, ...history];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedHistory));
+  try {
+      await fetch('/api/save-history-json', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newRecord)
+      });
+  } catch (e) {
+      console.error("Failed to save history record", e);
+  }
 };
 
-export const deleteHistory = (id: string) => {
-    const history = getHistory();
-    const updated = history.filter(h => h.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+export const deleteHistory = async (id: string) => {
+    try {
+        await fetch(`/api/history-records/${id}`, { method: 'DELETE' });
+    } catch (e) {
+        console.error("Failed to delete history record", e);
+    }
 }

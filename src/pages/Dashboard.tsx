@@ -8,7 +8,7 @@ import { parseExcel } from '../utils/excel';
 import { runClustering } from '../utils/clustering';
 import { estimateTeamTravelDistance } from '../utils/math';
 import { LayoutDashboard, Zap, Database, AlertCircle, Map, List, ChevronsLeft, ChevronsRight, Settings } from 'lucide-react';
-import { saveHistory } from '../utils/historyStorage';
+
 
 export const Dashboard = () => {
   const [params, setParams] = useState<ProcessingParams>({
@@ -65,14 +65,6 @@ export const Dashboard = () => {
     );
 
     setTeams(newTeams);
-    
-    // Update history silently
-    saveHistory({
-      fileName: file?.name || `Phân bổ ${new Date().toLocaleString('vi-VN')}`,
-      numberOfTeams: params.numberOfTeams,
-      totalCustomers: tccs.reduce((acc, t) => acc + t.SL_VITRI, 0),
-      teams: newTeams
-    });
   };
 
   const handleToggleLockTeam = (teamId: string) => {
@@ -162,13 +154,7 @@ export const Dashboard = () => {
          setTeams(finalTeams);
          setError(null);
          
-         // Auto-save to history
-         saveHistory({
-             fileName: file?.name || `Phân bổ ${new Date().toLocaleString('vi-VN')}`,
-             numberOfTeams: params.numberOfTeams,
-             totalCustomers: tccs.reduce((acc, t) => acc + t.SL_VITRI, 0),
-             teams: finalTeams
-         });
+
          
        } catch (e: any) {
          setError("Lỗi trong quá trình phân nhóm: " + e.message);

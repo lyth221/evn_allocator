@@ -5,6 +5,7 @@ import { Download, LayoutGrid, List, Map, ArrowRightLeft, Lock, Unlock } from 'l
 import { MapResults } from './MapResults';
 import * as XLSX from 'xlsx';
 
+
 interface ResultsProps {
   teams: Team[];
   onMoveTcc?: (tcc: TCC, fromTeamId: string, toTeamId: string) => void;
@@ -16,7 +17,6 @@ export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc, onToggleLock
   const [movingRowKey, setMovingRowKey] = useState<string | null>(null);
   
   const exportToExcel = () => {
-    // ... (keep existing)
     const rows = teams.flatMap(t => 
       t.tccs.map(tcc => ({
         MA_TRAM: tcc.MA_TRAM,
@@ -34,7 +34,33 @@ export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc, onToggleLock
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Allocated Teams");
-    XLSX.writeFile(wb, "TCC_Allocation_Result.xlsx");
+    
+    const fileName = `Result_${new Date().toISOString().slice(0,10)}_${Date.now()}.xlsx`;
+    
+    // 1. Trigger download for user
+    XLSX.writeFile(wb, fileName);
+
+    // 2. Save file to server /public/history
+    try {
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+        
+        // Send to server to save physically
+        fetch('/api/save-history', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                fileName,
+                content: wbout
+            })
+        }).then(res => res.json())
+          .then(data => console.log('File saved to server:', data))
+          .catch(err => console.error('Error saving file:', err));
+
+    } catch (e) {
+        console.error("Error processing export:", e);
+    }
   };
 
   const stats = useMemo(() => {
