@@ -4,7 +4,7 @@ import { TeamCard } from './TeamCard';
 import { Download, LayoutGrid, List, Map, ArrowRightLeft, Lock, Unlock } from 'lucide-react';
 import { MapResults } from './MapResults';
 import * as XLSX from 'xlsx';
-
+import { saveHistory } from '../utils/historyStorage';
 
 interface ResultsProps {
   teams: Team[];
@@ -40,26 +40,20 @@ export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc, onToggleLock
     // 1. Trigger download for user
     XLSX.writeFile(wb, fileName);
 
-    // 2. Save file to server /public/history
+    // 2. Save data to IndexedDB
     try {
-        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-        
-        // Send to server to save physically
-        fetch('/api/save-history', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                fileName,
-                content: wbout
-            })
-        }).then(res => res.json())
-          .then(data => console.log('File saved to server:', data))
-          .catch(err => console.error('Error saving file:', err));
+        const totalCustomers = teams.reduce((acc, t) => acc + t.totalCustomers, 0);
+        const totalDistance = teams.reduce((acc, t) => acc + t.estimatedDistanceKm, 0);
 
+        saveHistory({
+            fileName,
+            numberOfTeams: teams.length,
+            totalCustomers,
+            teams,
+            totalDistance
+        });
     } catch (e) {
-        console.error("Error processing export:", e);
+        console.error("Error saving history to DB:", e);
     }
   };
 

@@ -2,27 +2,28 @@ import { useEffect, useState } from 'react';
 import { Clock, FileSpreadsheet, Eye, X, Loader2, Trash2, Download, AlertTriangle } from 'lucide-react';
 import { Results } from '../components/Results';
 import * as XLSX from 'xlsx';
-import type { Team, TCC } from '../types';
+import type { Team } from '../types';
+import { getHistory, deleteHistory, type HistoryRecord } from '../utils/historyStorage';
 
 export const History = () => {
-  const [savedFiles, setSavedFiles] = useState<{name: string, size: number, mtime: string}[]>([]);
+  const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
   const [viewingFile, setViewingFile] = useState<{fileName: string, teams: Team[]} | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSavedFiles();
+    loadHistory();
   }, []);
 
-  const fetchSavedFiles = async () => {
+  const loadHistory = async () => {
+    setIsLoading(true);
     try {
-        const res = await fetch('/api/history-files');
-        if (res.ok) {
-            const data = await res.json();
-            setSavedFiles(data);
-        }
+        const records = await getHistory();
+        setHistoryRecords(records);
     } catch (e) {
-        console.error("Failed to fetch saved files", e);
+        console.error("Failed to load history", e);
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -30,101 +31,50 @@ export const History = () => {
     if (!itemToDelete) return;
     
     try {
-        const res = await fetch(`/api/history-files/${encodeURIComponent(itemToDelete)}`, {
-            method: 'DELETE'
-        });
-        
-        if (res.ok) {
-            await fetchSavedFiles();
-            if (viewingFile?.fileName === itemToDelete) {
-                setViewingFile(null);
-            }
-        } else {
-            console.error("Failed to delete file");
+        await deleteHistory(itemToDelete);
+        await loadHistory();
+        if (viewingFile && String(viewingFile.fileName) === String(historyRecords.find(r => r.id === itemToDelete)?.fileName)) {
+            setViewingFile(null);
         }
     } catch (e) {
-        console.error("Failed to delete file", e);
+        console.error("Failed to delete record", e);
     } finally {
         setItemToDelete(null);
     }
   };
 
-  const startDelete = (fileName: string) => {
-    setItemToDelete(fileName);
+  const startDelete = (id: string) => {
+    setItemToDelete(id);
   };
 
-  const handleViewFile = async (fileName: string) => {
-    // ... (existing logic) ...
-    setIsLoading(true);
-    try {
-        const response = await fetch(`/history/${fileName}`);
-        const arrayBuffer = await response.arrayBuffer();
-        const wb = XLSX.read(arrayBuffer);
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const data: any[] = XLSX.utils.sheet_to_json(ws);
+  const handleViewFile = (record: HistoryRecord) => {
+    setViewingFile({ fileName: record.fileName, teams: record.teams });
+  };
 
-        // Reconstruct Teams from flat Excel data
-        const teamsMap = new Map<string, Team>();
-
-        data.forEach((row: any) => {
-            // Updated to match exportToExcel keys in Results.tsx
-            const teamName = row['Team_Name'] || 'Chưa phân bổ';
-            
-            if (!teamsMap.has(teamName)) {
-                teamsMap.set(teamName, {
-                    id: row['Team_ID'] || `team_${Math.random()}`,
-                    name: teamName,
-                    tccs: [],
-                    totalCustomers: 0,
-                    estimatedDistanceKm: 0 // Will recalculate or use row['Team_Distance_KM'] if we want per-row but it's per team
-                });
-            }
-
-            const team = teamsMap.get(teamName)!;
-            
-            // Use explicit LAT/LNG columns if available
-            let lat = 0, lng = 0;
-            if (row['LAT'] !== undefined && row['LNG'] !== undefined) {
-                lat = parseFloat(row['LAT']);
-                lng = parseFloat(row['LNG']);
-            } else if (row['Tọa độ']) {
-                // Fallback for older format if exists
-                const parts = row['Tọa độ'].split(',').map((s: string) => s.trim());
-                if (parts.length === 2) {
-                    lat = parseFloat(parts[0]);
-                    lng = parseFloat(parts[1]);
-                }
-            }
-
-            const tcc: TCC = {
-                MA_TRAM: row['MA_TRAM'] || row['Mã Trạm'] || 'UNKNOWN',
-                TEN_TRAM: row['TEN_TRAM'] || '',
-                LONGITUDE: lng,
-                LATITUDE: lat,
-                SL_VITRI: parseInt(row['SL_VITRI'] || '1', 10),
-            };
-            
-            team.tccs.push(tcc);
-            
-            // If row has Team stats, we could use them, but better to recalc or take last non-empty
-            if (row['Team_Distance_KM']) {
-                team.estimatedDistanceKm = parseFloat(row['Team_Distance_KM']);
-            }
-        });
-
-        // Recalculate totals
-        const teams = Array.from(teamsMap.values()).map(t => ({
-            ...t,
-            totalCustomers: t.tccs.length // Approximate since we might imply 1 TCC = 1 customer if data missing
-        }));
-
-        setViewingFile({ fileName, teams });
-    } catch (e) {
-        console.error("Failed to parse file", e);
-        alert("Không thể đọc file này. Định dạng có thể không hợp lệ.");
-    } finally {
-        setIsLoading(false);
-    }
+  const handleDownloadFile = (record: HistoryRecord) => {
+      try {
+        const rows = record.teams.flatMap((t) => 
+            t.tccs.map((tcc) => ({
+            MA_TRAM: tcc.MA_TRAM,
+            Team_ID: t.id,
+            Team_Name: t.name,
+            Team_Total_SL: t.totalCustomers,
+            Team_Distance_KM: t.estimatedDistanceKm,
+            TEN_TRAM: tcc.TEN_TRAM || '',
+            SL_VITRI: tcc.SL_VITRI,
+            LAT: tcc.LATITUDE,
+            LNG: tcc.LONGITUDE
+            }))
+        );
+    
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Allocated Teams");
+        XLSX.writeFile(wb, record.fileName);
+      } catch (e) {
+          console.error("Failed to download file", e);
+          alert("Không thể tạo file Excel.");
+      }
   };
 
   return (
@@ -144,7 +94,7 @@ export const History = () => {
                  </div>
                  
                  <p className="text-slate-600 mb-6 text-sm">
-                    Bạn có chắc chắn muốn xóa file <span className="font-bold text-slate-800">{itemToDelete}</span> khỏi hệ thống không?
+                    Bạn có chắc chắn muốn xóa bản ghi này khỏi hệ thống không?
                  </p>
 
                  <div className="flex items-center justify-end gap-3">
@@ -192,26 +142,22 @@ export const History = () => {
       )}
 
       <div className="flex items-center justify-between mb-6 flex-none">
-         {/* ... Header ... */}
          <div>
             <h1 className="text-2xl font-bold text-[#20398B] flex items-center gap-3">
               <Clock className="w-8 h-8" /> Lịch sử phân bổ
             </h1>
-            <p className="text-slate-500 mt-1">Danh sách các file kết quả đã được lưu trữ.</p>
+            <p className="text-slate-500 mt-1">Danh sách các file kết quả đã được lưu trữ (IndexedDB).</p>
          </div>
          
          <div className="bg-slate-100 p-1 rounded-lg border border-slate-200 flex gap-1">
              <button 
-                onClick={fetchSavedFiles}
+                onClick={loadHistory}
                 className="px-4 py-2 text-sm font-medium rounded-md transition-all bg-white text-[#20398B] shadow-sm hover:bg-slate-50"
              >
                  Làm mới danh sách
              </button>
          </div>
       </div>
-      
-      {/* Table */}
-      {/* ... */}
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full overflow-hidden flex flex-col">
             <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
@@ -222,7 +168,7 @@ export const History = () => {
             </div>
             
             <div className="flex-1 overflow-y-auto p-0 custom-scrollbar">
-                {savedFiles.length === 0 ? (
+                {historyRecords.length === 0 ? (
                     <div className="flex flex-col items-center justify-center p-12 text-slate-400">
                         <FileSpreadsheet className="w-16 h-16 mb-4 opacity-20" />
                         <p>Chưa có file nào được lưu trong hệ thống.</p>
@@ -234,51 +180,50 @@ export const History = () => {
                                 <th className="px-6 py-3 font-semibold w-[10%]">STT</th>
                                 <th className="px-6 py-3 font-semibold w-[40%]">Tên File</th>
                                 <th className="px-6 py-3 font-semibold w-[20%]">Thời gian lưu</th>
-                                <th className="px-6 py-3 font-semibold w-[15%] text-right">Kích thước</th>
+                                <th className="px-6 py-3 font-semibold w-[15%] text-right">Tổng KH</th>
                                 <th className="px-6 py-3 font-semibold w-[15%] text-right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {savedFiles.map((file, idx) => (
-                                <tr key={idx} className="hover:bg-slate-50 transition-colors group">
+                            {historyRecords.map((record, idx) => (
+                                <tr key={record.id} className="hover:bg-slate-50 transition-colors group">
                                     <td className="px-6 py-4 text-slate-500">{idx + 1}</td>
                                     <td className="px-6 py-4 font-medium text-slate-900">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded bg-green-100 flex items-center justify-center text-green-600 flex-none">
                                                 <FileSpreadsheet className="w-4 h-4" />
                                             </div>
-                                            <span className="truncate" title={file.name}>{file.name}</span>
+                                            <span className="truncate" title={record.fileName}>{record.fileName}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-slate-600">
                                         <div className="flex flex-col text-xs">
-                                            <span className="font-medium">{new Date(file.mtime).toLocaleDateString('vi-VN')}</span>
-                                            <span className="text-slate-400">{new Date(file.mtime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</span>
+                                            <span className="font-medium">{new Date(record.timestamp).toLocaleDateString('vi-VN')}</span>
+                                            <span className="text-slate-400">{new Date(record.timestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right text-slate-600 font-mono text-xs">
-                                        {(file.size / 1024).toFixed(1)} KB
+                                        {record.totalCustomers}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button 
-                                                onClick={() => handleViewFile(file.name)}
+                                                onClick={() => handleViewFile(record)}
                                                 disabled={isLoading}
                                                 className="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-all shadow-sm border border-blue-200"
                                                 title="Xem chi tiết"
                                             >
                                                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
                                             </button>
-                                            <a 
-                                                href={`/history/${file.name}`} 
-                                                download
+                                            <button 
+                                                onClick={() => handleDownloadFile(record)}
                                                 className="p-2 bg-white text-slate-600 rounded-md hover:bg-slate-50 hover:text-[#20398B] hover:border-[#20398B] transition-all shadow-sm border border-slate-300"
                                                 title="Tải xuống"
                                             >
                                                 <Download className="w-4 h-4" />
-                                            </a>
+                                            </button>
                                             <button 
-                                                onClick={() => startDelete(file.name)}
+                                                onClick={() => startDelete(record.id)}
                                                 className="p-2 bg-white text-slate-400 rounded-md hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all shadow-sm border border-slate-300"
                                                 title="Xóa file"
                                             >
@@ -292,7 +237,7 @@ export const History = () => {
                     </table>
                 )}
             </div>
-        </div>
+      </div>
     </div>
   );
 };
