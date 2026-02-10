@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { UploadCloud, FileSpreadsheet, CheckCircle } from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, CheckCircle, Download } from 'lucide-react';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -67,6 +67,20 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, selectedFi
                 </p>
              </div>
           )}
+        </div>
+        
+        <div className="mt-3">
+             <a 
+                href="/INPUT.xlsx" 
+                download
+                className="group flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all text-xs font-bold uppercase tracking-wide shadow-sm hover:shadow border border-green-700"
+                title="Tải file mẫu để nhập liệu chuẩn"
+             >
+                <div className="p-1 rounded-full bg-white/20 border border-white/30 group-hover:bg-white/30 transition-colors">
+                    <Download className="w-3.5 h-3.5 text-white" />
+                </div>
+                Tải file mẫu (.xlsx)
+             </a>
         </div>
     </div>
   );
