@@ -19,11 +19,11 @@ export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc, onToggleLock
     // ... (keep existing)
     const rows = teams.flatMap(t => 
       t.tccs.map(tcc => ({
+        MA_TRAM: tcc.MA_TRAM,
         Team_ID: t.id,
         Team_Name: t.name,
         Team_Total_SL: t.totalCustomers,
         Team_Distance_KM: t.estimatedDistanceKm,
-        MA_TRAM: tcc.MA_TRAM,
         TEN_TRAM: tcc.TEN_TRAM || '',
         SL_VITRI: tcc.SL_VITRI,
         LAT: tcc.LATITUDE,
