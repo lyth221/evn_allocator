@@ -13,7 +13,8 @@ import { LayoutDashboard, Zap, Database, AlertCircle, Map, List, ChevronsLeft, C
 export const Dashboard = () => {
   const [params, setParams] = useState<ProcessingParams>({
     numberOfTeams: 5,
-    tolerancePercent: 10
+    tolerancePercent: 10,
+    algorithmMode: 'mode1'
   });
   const [file, setFile] = useState<File | null>(null);
   const [tccs, setTCCs] = useState<TCC[]>([]);
@@ -38,7 +39,7 @@ export const Dashboard = () => {
     }
   };
 
-  const handleParamChange = (key: keyof ProcessingParams, value: number) => {
+  const handleParamChange = (key: keyof ProcessingParams, value: any) => {
     setParams(prev => ({ ...prev, [key]: value }));
   };
 

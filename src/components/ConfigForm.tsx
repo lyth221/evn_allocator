@@ -4,7 +4,7 @@ import type { ProcessingParams } from '../types';
 
 interface ConfigFormProps {
   params: ProcessingParams;
-  onChange: (key: keyof ProcessingParams, value: number) => void;
+  onChange: (key: keyof ProcessingParams, value: any) => void;
   onSubmit: () => void;
   disabled?: boolean;
   isProcessing?: boolean;
@@ -49,6 +49,20 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({ params, onChange, onSubm
           <p className="text-xs text-slate-500 mt-1.5">
             Mục tiêu mỗi nhóm = Tổng / Số nhóm ± {params.tolerancePercent}%
           </p>
+        </div>
+
+        <div className="group">
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5 pt-2 border-t border-slate-100 flex items-center gap-2">
+            Giải thuật tối ưu
+          </label>
+          <select
+            value={params.algorithmMode || 'mode1'}
+            onChange={(e) => onChange('algorithmMode', e.target.value)}
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-[#20398B]/20 focus:border-[#20398B] transition-all text-sm font-medium hover:bg-white"
+          >
+            <option value="mode1">Mode 1 - Ưu tiên Số lượng KH</option>
+            <option value="mode2">Mode 2 - Ưu tiên Tối ưu Quãng đường</option>
+          </select>
         </div>
 
         <button 

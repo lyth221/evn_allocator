@@ -18,4 +18,5 @@ export interface Team {
 export interface ProcessingParams {
   numberOfTeams: number;
   tolerancePercent: number; // e.g., 10 for 10%
+  algorithmMode?: 'mode1' | 'mode2';
 }
