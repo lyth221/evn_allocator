@@ -220,7 +220,7 @@ export const Results: React.FC<ResultsProps> = ({ teams, onMoveTcc, onToggleLock
                                                         {teams.filter(t => t.id !== row.teamId && !t.isLocked).map(t => {
                                                             // Calculate color index based on original list index
                                                             const originalIdx = teams.findIndex(team => team.id === t.id);
-                                                            const color = ['#ef4444', '#3b82f6', '#22c55e', '#f97316', '#a855f7', '#06b6d4', '#e11d48', '#8b5cf6', '#10b981', '#f59e0b'][originalIdx % 10]; // TEAM_COLORS duplicated here for simplicity or export it
+                                                            const color = ['#ef4444', '#3b82f6', '#22c55e', '#f97316', '#a855f7', '#06b6d4', '#f59e0b', '#10b981', '#e11d48', '#6366f1', '#84cc16', '#ec4899', '#14b8a6', '#f43f5e', '#0ea5e9'][originalIdx % 15];
 
                                                             return (
                                                                 <button

@@ -11,8 +11,9 @@ interface TeamCardProps {
 }
 
 const TEAM_COLORS = [
-  '#ef4444', '#3b82f6', '#22c55e', '#f97316', '#a855f7', 
-  '#06b6d4', '#e11d48', '#8b5cf6', '#10b981', '#f59e0b'
+  '#ef4444', '#3b82f6', '#22c55e', '#f97316', '#a855f7',
+  '#06b6d4', '#f59e0b', '#10b981', '#e11d48', '#6366f1',
+  '#84cc16', '#ec4899', '#14b8a6', '#f43f5e', '#0ea5e9',
 ];
 
 export const TeamCard: React.FC<TeamCardProps> = ({ team, index, allTeams, onMoveTcc, onToggleLock }) => {

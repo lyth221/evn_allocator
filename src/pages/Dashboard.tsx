@@ -165,7 +165,7 @@ export const Dashboard = () => {
   };
 
   return (
-      <div className={`grid grid-cols-1 transition-all duration-300 ease-in-out gap-4 h-[calc(100vh-8rem)] ${isSidebarCollapsed ? 'lg:grid-cols-[60px_1fr]' : 'lg:grid-cols-[300px_1fr]'}`}>
+      <div className={`grid grid-cols-1 transition-all duration-300 ease-in-out gap-4 h-[calc(100vh-8rem)] ${isSidebarCollapsed ? 'lg:grid-cols-[60px_1fr]' : 'lg:grid-cols-[345px_1fr]'}`}>
          <div className="flex flex-col gap-3 h-full overflow-y-auto custom-scrollbar pr-1 transition-all">
             
             {/* Collapse Toggle Header (visible when expanded) */}
