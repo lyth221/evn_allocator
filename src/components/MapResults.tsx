@@ -32,6 +32,27 @@ const TEAM_COLORS = [
   '#0ea5e9', // sky-500
 ];
 
+const MAP_STYLES = [
+  {
+    id: 'voyager',
+    name: 'Rõ tên đường',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  },
+  {
+    id: 'standard',
+    name: 'OSM mặc định',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  },
+  {
+    id: 'hot',
+    name: 'OSM chi tiết',
+    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by HOT'
+  }
+] as const;
+
 const createCustomIcon = (color: string, showBadge: boolean = true) => {
   const iconHtml = renderToStaticMarkup(
     <div style={{
@@ -99,6 +120,8 @@ export const MapResults: React.FC<MapResultsProps> = ({ teams, showTeamColor = t
   const defaultCenter: [number, number] = [10.8231, 106.6297]; // HCM City
   const [isLegendOpen, setIsLegendOpen] = React.useState(true);
   const [hiddenTeamIds, setHiddenTeamIds] = React.useState<Set<string>>(new Set());
+  const [mapStyleId, setMapStyleId] = React.useState<typeof MAP_STYLES[number]['id']>('voyager');
+  const mapStyle = MAP_STYLES.find(style => style.id === mapStyleId) ?? MAP_STYLES[0];
 
   // Removed useEffect that resets hiddenTeamIds on teams change to preserve user selection
   // especially for locked teams during re-allocation.
@@ -118,8 +141,9 @@ export const MapResults: React.FC<MapResultsProps> = ({ teams, showTeamColor = t
     <div className="h-[80vh] w-full rounded-xl overflow-hidden border border-slate-200 shadow-sm relative z-0 bg-slate-100">
        <MapContainer center={defaultCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            key={mapStyle.id}
+            url={mapStyle.url}
+            attribution={mapStyle.attribution}
           />
           <FitBounds teams={teams} />
           {teams.map((team, idx) => {
@@ -206,6 +230,28 @@ export const MapResults: React.FC<MapResultsProps> = ({ teams, showTeamColor = t
              ));
           })}
        </MapContainer>
+
+       <div className="absolute top-2 left-2 z-[1000] bg-white/95 backdrop-blur-md rounded-md shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-2.5 py-1.5 bg-slate-50/80 border-b border-slate-100">
+            <span className="font-bold text-slate-700 text-[11px]">Nền bản đồ</span>
+          </div>
+          <div className="p-1.5 flex flex-col gap-1">
+            {MAP_STYLES.map(style => (
+              <button
+                key={style.id}
+                onClick={() => setMapStyleId(style.id)}
+                className={`text-left px-2 py-1.5 rounded text-[11px] font-medium transition-colors ${
+                  mapStyleId === style.id
+                    ? 'bg-[#20398B] text-white'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                title={`Đổi sang nền ${style.name}`}
+              >
+                {style.name}
+              </button>
+            ))}
+          </div>
+       </div>
        
        {showTeamColor && teams.length > 0 && (
           <div className={`absolute top-2 right-2 z-[1000] bg-white/95 backdrop-blur-md rounded-md shadow-sm border border-slate-200 transition-all duration-300 overflow-hidden flex flex-col ${isLegendOpen ? 'w-auto min-w-[200px] max-w-[300px] max-h-[calc(100%-1rem)]' : 'w-auto h-auto'}`}>
