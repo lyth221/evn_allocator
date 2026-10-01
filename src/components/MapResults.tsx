@@ -120,7 +120,7 @@ export const MapResults: React.FC<MapResultsProps> = ({ teams, showTeamColor = t
   const defaultCenter: [number, number] = [10.8231, 106.6297]; // HCM City
   const [isLegendOpen, setIsLegendOpen] = React.useState(true);
   const [hiddenTeamIds, setHiddenTeamIds] = React.useState<Set<string>>(new Set());
-  const [mapStyleId, setMapStyleId] = React.useState<typeof MAP_STYLES[number]['id']>('voyager');
+  const [mapStyleId, setMapStyleId] = React.useState<typeof MAP_STYLES[number]['id']>('standard');
   const mapStyle = MAP_STYLES.find(style => style.id === mapStyleId) ?? MAP_STYLES[0];
 
   // Removed useEffect that resets hiddenTeamIds on teams change to preserve user selection
