@@ -1,5 +1,9 @@
 # React + TypeScript + Vite
 
+## Mapbox trên Vercel
+
+Đặt biến môi trường `VITE_MAPBOX_TOKEN` trong Vercel cho môi trường **Production** trước khi deploy. Giá trị là public access token Mapbox (`pk.*`). Vite nhúng biến này vào bundle tại thời điểm build; thay đổi biến cần redeploy để có hiệu lực. Giới hạn token theo domain triển khai trong Mapbox để tránh bị dùng trên website khác.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
